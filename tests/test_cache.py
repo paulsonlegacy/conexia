@@ -1,10 +1,6 @@
 # Import necessary modules
-import os  # For file and directory path operations
-import time  # For handling time-based operations like TTL expiry
-import json  # For handling JSON data storage in file caching
-import unittest  # For running unit tests
-import sqlite3  # For handling SQLite database caching
-import redis  # For handling Redis-based caching
+import os, time, json, sqlite3, redis, unittest
+
 
 # Import caching classes from the 'conexia.cache' module
 from conexia.cache import InMemoryCache, FileCache, SQLiteCache, RedisCache

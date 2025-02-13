@@ -12,7 +12,7 @@ class STUNClient:
         self.stun_server = stun_server or DEFAULT_STUN_SERVERS[server_count]["server"]
         self.stun_port = int(stun_port or DEFAULT_STUN_SERVERS[server_count]["port"])
         self.cache = IPResolverCache(backend=cache_backend, ttl=ttl, **cache_kwargs)
-        print(f"Using STUN Server: {self.stun_server}, Port: {self.stun_port}")  # Debugging output
+        #print(f"Using STUN Server: {self.stun_server}, Port: {self.stun_port}")  # Debugging output
 
     def _get_cached_ips(self):
         """Retrieve all cached IPs based on backend type."""
@@ -39,7 +39,7 @@ class STUNClient:
         timestamp = time.time()  # Current timestamp
 
         try:
-            print("Checking cache for STUN info...")
+            #print("Checking cache for STUN info...")
             
             # Determine user ID (web app users get request.user.id, CLI users get machine UUID)
             user_id = get_user_id(request)
@@ -49,11 +49,11 @@ class STUNClient:
             if cached_ip:
                 stun_infos = self.cache.get_cached_info(user_id)
                 if stun_infos:
-                    print("Found STUN info in cache")
+                    #print("Found STUN info in cache")
                     return stun_infos
             
             # If not found in cache, query the STUN server
-            print("Fetching new STUN data from server...")
+            #print("Fetching new STUN data from server...")
             loop = asyncio.get_running_loop()
             nat_type, ip, port = await loop.run_in_executor(
                 None, stun.get_ip_info, "0.0.0.0", 54320, self.stun_server, self.stun_port

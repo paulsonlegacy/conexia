@@ -2,3 +2,6 @@ notes.txt
 notes.md
 cache.sqlite
 cache.json
+build/
+dist/
+*.egg-info/
