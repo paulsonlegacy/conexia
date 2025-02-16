@@ -28,13 +28,33 @@ def get_machine_uuid():
     return new_uuid
 
 
-def get_user_id(request):
+def get_user_id(request=None, user_id=None):
     """
-    Determine whether to use user-based caching or machine-based caching
-    """
-    if hasattr(request, "user") and request.user.is_authenticated:
-        user_id = str(request.user.id)  # Use authenticated user ID
-    else:
-        user_id = get_machine_uuid()  # Use machine-based UUID for standalone use
+    Determine whether to use passed in user ID, request user ID or machine-generated ID
 
-    return user_id
+    Supports:
+    - Django (request.user)
+    - Other frameworks that pass `user_id` directly
+    - Standalone apps (fallback to machine UUID)
+
+    Django Example:
+    user_id = get_user_id(request)  
+
+    Flask Example:
+    from flask_login import current_user
+    user_id = get_user_id(user_id=current_user.get_id()) 
+
+    Stand-alone Application:
+    user_id = get_user_id()  # Uses machine UUID  
+
+    Manually Passing User ID:
+    user_id = get_user_id(user_id="12345")  # Directly passing user ID
+    """
+
+    if user_id:  
+        return str(user_id)  # Directly use user ID if provided
+
+    if request and hasattr(request, "user") and getattr(request.user, "is_authenticated", False):
+        return str(request.user.id)  # Use authenticated user ID
+
+    return get_machine_uuid()  # Fallback for standalone apps or missing request

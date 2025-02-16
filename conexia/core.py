@@ -32,12 +32,12 @@ class AsyncSTUNClient:
 
         return []
 
-    async def get_stun_info(self, request=None):
+    async def get_stun_info(self, request=None, user_id=None):
         """Retrieve NAT type, external IP, and external port using configurable caching."""
         timestamp = time.time()  
 
         try:
-            user_id = get_user_id(request)
+            user_id = get_user_id(request, user_id)
             cached_ip = self._get_cached_ips()
             if cached_ip:
                 stun_infos = self.cache.get_cached_info(user_id)
@@ -61,44 +61,44 @@ class AsyncSTUNClient:
         except Exception as e:
             raise STUNResolutionError(f"Failed to retrieve STUN Info: {e}")
 
-    async def get_user_id(self, request=None):
-        stun_info = await self.get_stun_info(request)
+    async def get_user_id(self, request=None, user_id=None):
+        stun_info = await self.get_stun_info(request, user_id)
         return stun_info["user_id"]
     
-    async def get_public_ip(self, request=None):
-        stun_info = await self.get_stun_info(request)
+    async def get_public_ip(self, request=None, user_id=None):
+        stun_info = await self.get_stun_info(request, user_id)
         return stun_info["data"]["ip"]
 
-    async def get_public_port(self, request=None):
-        stun_info = await self.get_stun_info(request)
+    async def get_public_port(self, request=None, user_id=None):
+        stun_info = await self.get_stun_info(request, user_id)
         return stun_info["data"]["port"]
 
-    async def get_nat_type(self, request=None):
-        stun_info = await self.get_stun_info(request)
+    async def get_nat_type(self, request=None, user_id=None):
+        stun_info = await self.get_stun_info(request, user_id)
         return stun_info["data"]["nat_type"]
     
 
 class STUNClient(AsyncSTUNClient):
-    def get_stun_info(self, request=None):
+    def get_stun_info(self, request=None, user_id=None):
         """Synchronous wrapper for getting STUN info."""
-        return asyncio.run(super().get_stun_info(request))
+        return asyncio.run(super().get_stun_info(request, user_id))
 
-    def get_user_id(self, request=None):
+    def get_user_id(self, request=None, user_id=None):
         """Synchronous wrapper for getting user ID."""
-        stun_info = self.get_stun_info(request)
+        stun_info = self.get_stun_info(request, user_id)
         return stun_info["user_id"]
 
-    def get_public_ip(self, request=None):
+    def get_public_ip(self, request=None, user_id=None):
         """Synchronous wrapper for getting IP."""
-        stun_info = self.get_stun_info(request)
+        stun_info = self.get_stun_info(request, user_id)
         return stun_info["data"]["ip"]
 
-    def get_public_port(self, request=None):
+    def get_public_port(self, request=None, user_id=None):
         """Synchronous wrapper for getting port."""
-        stun_info = self.get_stun_info(request)
+        stun_info = self.get_stun_info(request, user_id)
         return stun_info["data"]["port"]
 
-    def get_nat_type(self, request=None):
+    def get_nat_type(self, request=None, user_id=None):
         """Synchronous wrapper for getting NAT type."""
-        stun_info = self.get_stun_info(request)
+        stun_info = self.get_stun_info(request, user_id)
         return stun_info["data"]["nat_type"]
