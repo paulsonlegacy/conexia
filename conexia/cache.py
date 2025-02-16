@@ -40,6 +40,8 @@ class InMemoryCache:
 
     def get_cached_info(self, user_id):
         """Retrieve STUN info if available in cache."""
+        # TTLCache is used for time-based expiry of cached entries
+        # Hence no need for cache expiry validation upon retrieval
         return self.cache.get(user_id)
 
     def cache_stun_info(self, user_id, ip, port, nat_type, timestamp):

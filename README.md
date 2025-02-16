@@ -27,24 +27,17 @@ pip install .
 ## **⚡ Usage**
 ### **Basic Example**
 ```python
-import asyncio
 from conexia.core import STUNClient
 
-async def main():
-    client = STUNClient(cache_backend="file")  # Change to "memory", "file", "sqlite", "redis" as needed
-    user_id = await client.get_user_id()
-    public_ip = await client.get_public_ip()
-    public_port = await client.get_public_port()
-    nat_type = await client.get_nat_type()
-
-    print("User ID:", user_id)
-    print("Public IP:", public_ip)
-    print("Public Port:", public_port)
-    print("NAT Type:", nat_type)
-
-# Ensure the script runs asynchronously
-if __name__ == "__main__":
-    asyncio.run(main())
+client = STUNClient()
+stun_info = client.get_stun_info()
+ip = client.get_public_ip()
+port = client.get_public_port()
+nat_type = client.get_nat_type()
+print(f"STUN Info: {stun_info}")
+print(f"Public IP: {ip}")
+print(f"Public Port: {port}")
+print(f"NAT Type: {nat_type}")
 ```
 **Or run via command line after installation**
 ```
