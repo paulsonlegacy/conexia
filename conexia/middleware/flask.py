@@ -10,7 +10,7 @@ except ImportError:
 
 
 class STUNMiddleware:
-    def __init__(self, app, cache_backend="file", ttl=300): # ttl - time to live or cache expiry 
+    def __init__(self, app, cache_backend="file", ttl=900):
         """STUN Middleware providing network attributes for Flask's global object for request context"""
         self.app = app
         self.stun_client = STUNClient(cache_backend=cache_backend, ttl=ttl)
@@ -28,15 +28,30 @@ class STUNMiddleware:
                 user_id = request.cookies.get("user_id")  # Cookie-based auth
 
             # Get STUN info
-            stun_info = self.stun_client.get_stun_info(user_id=user_id)
-            ip = stun_info['data']['ip']
-            port = stun_info['data']['port']
-            nat_type = stun_info['data']['nat_type']
+            stun_info = self.stun_client.get_network_info(user_id=user_id)
         except Exception:
-            ip, port, nat_type = None, None, None
+            # Placeholder for exceptions
+            stun_info = {
+                "data": {
+                    "ip": None,
+                    "port": None,
+                    "city": None,
+                    "region": None,
+                    "country": None,
+                    "continent": None,
+                    "timezone": None,
+                    "nat_type": None
+                }
+            }
 
         # Store network attributes in `g` (Flask's global object for request context)
-        g.ip = ip
-        g.port = port
-        g.nat_type = nat_type
+        # Attach to request object
+        g.ip = stun_info["data"]["ip"]
+        g.port = stun_info["data"]["port"]
+        g.city = stun_info["data"]["city"]
+        g.region = stun_info["data"]["region"]
+        g.country = stun_info["data"]["country"]
+        g.continent = stun_info["data"]["continent"]
+        g.timezone = stun_info["data"]["timezone"]
+        g.nat_type = stun_info["data"]["nat_type"]
         g.user_id = user_id  # Store user ID too

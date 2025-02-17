@@ -7,24 +7,38 @@ class STUNMiddleware:
         self.get_response = get_response
         # Load settings from Django settings.py
         self.cache_backend = getattr(settings, "STUN_CACHE_BACKEND", "file")  # Default: "file"
-        self.cache_ttl = getattr(settings, "STUN_CACHE_TTL", 300)  # Default: 300 seconds
+        self.cache_ttl = getattr(settings, "STUN_CACHE_TTL", 900)  # Default: 900 seconds
         # Initialize the STUN client with the configured settings
         self.stun_client = STUNClient(cache_backend=self.cache_backend, ttl=self.cache_ttl)
 
     def __call__(self, request):
         try:
             # Fetch STUN info synchronously
-            stun_info = self.stun_client.get_stun_info(request=request)
-            ip = stun_info["data"]["ip"]
-            port = stun_info["data"]["port"]
-            nat_type = stun_info["data"]["nat_type"]
+            stun_info = self.stun_client.get_network_info(request=request)
         except Exception:
-            ip, port, nat_type = None, None, None
+            # Placeholder for exceptions
+            stun_info = {
+                "data": {
+                    "ip": None,
+                    "port": None,
+                    "city": None,
+                    "region": None,
+                    "country": None,
+                    "continent": None,
+                    "timezone": None,
+                    "nat_type": None
+                }
+            }
 
         # Attach to request object
-        request.ip = ip
-        request.port = port
-        request.nat_type = nat_type
+        request.ip = stun_info["data"]["ip"]
+        request.port = stun_info["data"]["port"]
+        request.city = stun_info["data"]["city"]
+        request.region = stun_info["data"]["region"]
+        request.country = stun_info["data"]["country"]
+        request.continent = stun_info["data"]["continent"]
+        request.timezone = stun_info["data"]["timezone"]
+        request.nat_type = stun_info["data"]["nat_type"]
 
         response = self.get_response(request)
         return response

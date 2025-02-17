@@ -4,14 +4,14 @@ from conexia.core import AsyncSTUNClient
 
 async def main():
     client = AsyncSTUNClient(cache_backend="file")
-    stun_info = await client.get_stun_info()
+    network_info = await client.get_network_info()
     #user_id = await client.get_user_id()
     #public_ip = await client.get_public_ip()
     #public_port = await client.get_public_port()
     #nat_type = await client.get_nat_type()
 
     # Print CLI output
-    print("STUN Result:", stun_info)
+    print("STUN Result:", network_info)
 
 
 def cli_entry_point():

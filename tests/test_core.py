@@ -10,9 +10,9 @@ class TestSTUNClient(unittest.IsolatedAsyncioTestCase):
         self.client = STUNClient(cache_backend="memory", ttl=300)
 
     @patch("stun.get_ip_info", return_value=("Full-Cone NAT", "203.0.113.1", 45678))
-    async def test_get_stun_info(self, mock_stun):
+    async def test_get_network_info(self, mock_stun):
         """Test that STUNClient fetches and caches STUN info correctly."""
-        result = await self.client.get_stun_info()
+        result = await self.client.get_network_info()
         
         self.assertIn("user_id", result)
         self.assertEqual(result["data"]["ip"], "203.0.113.1")
@@ -32,7 +32,7 @@ class TestSTUNClient(unittest.IsolatedAsyncioTestCase):
     async def test_stun_resolution_error(self, mock_stun):
         """Test handling of STUN resolution failure."""
         with self.assertRaises(Exception) as context:
-            await self.client.get_stun_info()
+            await self.client.get_network_info()
         
         self.assertIn("STUN server unreachable", str(context.exception))
 

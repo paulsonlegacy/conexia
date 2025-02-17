@@ -8,7 +8,7 @@ class TestSTUNMiddleware(unittest.TestCase):
         """Set up ASGI middleware instance."""
         self.middleware = STUNMiddleware(lambda req: req)
 
-    @patch("conexia.core.STUNClient.get_stun_info", new_callable=AsyncMock)
+    @patch("conexia.core.STUNClient.get_network_info", new_callable=AsyncMock)
     def test_asgi_middleware_attaches_stun_info(self, mock_stun):
         """Test ASGI middleware attaches correct STUN info."""
         scope = {

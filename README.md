@@ -31,17 +31,48 @@ pip install .
 ```python
 from conexia.core import STUNClient
 
+# Initialize engine
 client = STUNClient()
-stun_info = client.get_stun_info()
+
+# Fetch full network info
+network_info = client.get_network_info()
+
+# Fetch IP
 ip = client.get_public_ip()
+
+# Fetch port
 port = client.get_public_port()
+
+# Fetch NAT type
 nat_type = client.get_nat_type()
-print(f"STUN Info: {stun_info}")
-print(f"Public IP: {ip}")
-print(f"Public Port: {port}")
-print(f"NAT Type: {nat_type}")
+
+# Fetch city
+city = client.get_city()
+
+# Fetch region
+region = client.get_region()
+
+# Fetch country
+country = client.get_country()
+
+# Fetch continent
+continent = client.get_continent()
+
+# Fetch cordinate
+cordinate = client.get_cordinate()
+
+# Fetch ISP info
+isp_info = client.get_isp_info()
+
+# Fetch timezone
+timezone = client.get_timezone()
+
+# Print full data
+print(network_info)
 ```
+
 **Or run via command line after installation**
+
 ```
 conexia
 ```
@@ -49,13 +80,20 @@ conexia
 📌 **Output (Example)**  
 ```json
 {
-    "user_id": "device123",
-    "data": {
-        "ip": "192.168.1.10",
-        "port": 3478,
-        "nat_type": "Full Cone"
-    },
-    "timestamp": 1691234567
+    'user_id': '667bd38c-e702-4295-9650-3afe5bacc361', 
+    'data': {
+        'ip': '102.90.100.117', 
+        'port': 10134, 
+        'nat_type': 'Full Cone', 
+        'city': 'Port Harcourt', 
+        'region': 'Rivers State', 
+        'country': 'NG',
+        'continent': 'Africa',
+        'cord': '4.7774,7.0134', 
+        'isp_info': 'MTN NIGERIA Communication limited', 
+        'timezone': 'Africa/Lagos'
+        }, 
+    'timestamp': 1739771764.9438107
 }
 ```
 
@@ -192,7 +230,7 @@ stun_client = STUNClient(backend="redis", ttl=300)
 @app.before_request
 def attach_stun_data():
     user_id = request.args.get("user_id", "default_id")
-    stun_info = stun_client.get_stun_info(user_id)
+    stun_info = stun_client.get_network_info(user_id)
     g.ip = stun_info['data']['ip']
     g.port = stun_info['data']['port']
     g.nat_type = stun_info['data']['nat_type']

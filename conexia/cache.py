@@ -44,13 +44,9 @@ class InMemoryCache:
         # Hence no need for cache expiry validation upon retrieval
         return self.cache.get(user_id)
 
-    def cache_stun_info(self, user_id, ip, port, nat_type, timestamp):
+    def cache_stun_info(self, user_id, data):
         """Store STUN info in cache."""
-        self.cache[user_id] = {
-            "user_id": user_id,
-            "data": {"ip": ip, "port": port, "nat_type": nat_type},
-            "timestamp": timestamp,
-        }
+        self.cache[user_id] = data
 
     def clear_cache(self, user_id=None):
         """Clear cache for a specific user_id or all if None."""
@@ -69,13 +65,9 @@ class FileCache:
         self.ttl = ttl
         self.cache = self._load_cache()  # ✅ Load cache properly
 
-    def cache_stun_info(self, user_id, ip, port, nat_type, timestamp):
+    def cache_stun_info(self, user_id, data):
         """Store STUN info in a file with timestamps."""
-        self.cache[user_id] = {
-            "user_id": user_id,
-            "data": {"ip": ip, "port": port, "nat_type": nat_type},
-            "timestamp": timestamp,
-        }
+        self.cache[user_id] = data
         self._save_cache()
 
     def get_cached_info(self, user_id):
@@ -126,21 +118,28 @@ class SQLiteCache:
             conn.execute(
                 """
                     CREATE TABLE IF NOT EXISTS stun_cache (
-                        user_id VARCHAR(100) PRIMARY KEY,
+                        user_id VARCHAR(255) PRIMARY KEY,
                         ip TEXT,
                         port INTEGER,
-                        nat_type TEXT,
+                        city VARCHAR(255),
+                        region VARCHAR(255),
+                        country VARCHAR(255),
+                        continent VARCHAR(255),
+                        timezone VARCHAR(255),
+                        cord VARCHAR(255),
+                        isp_info VARCHAR(255),
+                        nat_type VARCHAR(255),
                         timestamp REAL
                     )
                 """
             )
 
-    def cache_stun_info(self, user_id, ip, port, nat_type, timestamp):
+    def cache_stun_info(self, user_id, data):
         """Insert STUN info with timestamp."""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "REPLACE INTO stun_cache (user_id, ip, port, nat_type, timestamp) VALUES (?, ?, ?, ?, ?)",
-                (user_id, ip, port, nat_type, timestamp),
+                "REPLACE INTO stun_cache (user_id, ip, port, city, region, country, continent, timezone, cord, isp_info, nat_type, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (user_id, data["data"]["ip"], data["data"]["port"], data["data"]["city"], data["data"]["region"], data["data"]["country"], data["data"]["continent"], data["data"]["timezone"], data["data"]["cord"], data["data"]["isp_info"], data["data"]["nat_type"], data["timestamp"]),
             )
 
     def get_cached_info(self, user_id):
@@ -150,11 +149,22 @@ class SQLiteCache:
             row = cursor.fetchone()
             if row:
                 current_time = time.time()
-                if current_time - row[4] < self.ttl:
+                if current_time - row[10] < self.ttl:
                     return {
                         "user_id": row[0],
-                        "data": {"ip": row[1], "port": row[2], "nat_type": row[3]},
-                        "timestamp": row[4],
+                        "data": {
+                            "ip": row[1], 
+                            "port": row[2],
+                            "city": row[3],
+                            "region": row[4],
+                            "country": row[5],
+                            "continent": row[6],
+                            "timezone": row[7],
+                            "cord": row[8],
+                            "isp_info": row[9],
+                            "nat_type": row[10]
+                            },
+                        "timestamp": row[11],
                     }
                 conn.execute("DELETE FROM stun_cache WHERE user_id=?", (user_id,))   # Cleanup expired entry
         return None
@@ -177,13 +187,9 @@ class RedisCache:
         self.redis = redis.from_url(redis_url)
         self.ttl = ttl
 
-    def cache_stun_info(self, user_id, ip, port, nat_type, timestamp):
+    def cache_stun_info(self, user_id, data):
         """Cache STUN info with automatic expiry."""
-        data = json.dumps({
-            "user_id": user_id,
-            "data": {"ip": ip, "port": port, "nat_type": nat_type},
-            "timestamp": timestamp,
-        })
+        data = json.dumps(data)
         self.redis.setex(user_id, self.ttl, data)  # Automatically expires after `ttl` seconds
 
     def get_cached_info(self, user_id):
@@ -223,9 +229,9 @@ class IPResolverCache:
         """Retrieve cached STUN info if available."""
         return self.cache.get_cached_info(user_id)
 
-    def cache_stun_info(self, user_id, ip, port, nat_type, timestamp):
+    def cache_stun_info(self, user_id, data):
         """Store STUN info in cache."""
-        self.cache.cache_stun_info(user_id, ip, port, nat_type, timestamp)
+        self.cache.cache_stun_info(user_id, data)
 
     def clear_cache(self, user_id=None):
         """Clear cache for a specific user_id or all if None."""
