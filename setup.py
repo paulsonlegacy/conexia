@@ -7,7 +7,7 @@ def read_requirements():
 
 setup(
     name="conexia",  
-    version="0.1.0", # Update this version on each release
+    version="0.2.0", # Update this version on each release
     author="Paulson Bosah",
     author_email="paulsonbosah@gmail.com",
     description="A Python library for fetching real IP and Port using STUN servers and easily integratable with Python backend frameworks.",

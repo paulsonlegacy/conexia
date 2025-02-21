@@ -212,7 +212,7 @@ class RedisCache:
 # Cache Manager (Chooses Backend)
 # ================================
 class IPResolverCache:
-    def __init__(self, backend="memory", ttl=900, **kwargs):  
+    def __init__(self, backend:str="file", ttl:int=900, **kwargs):  
         """Initialize the appropriate cache backend with TTL support."""
         if backend == "memory":
             self.cache = InMemoryCache(ttl=ttl, **kwargs)  # Pass TTL

@@ -3,9 +3,8 @@
 - tests/test_core.py
 - tests/test_cache.py
 
-# Features
+# Future features
 
-- Optional caching
 - Implement a simple WebSocket signaling server.
 - Extend conexia to generate ICE candidates & SDP.
 - Test peer-to-peer chat by exchanging SDP via WebSocket.

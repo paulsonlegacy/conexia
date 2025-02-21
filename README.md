@@ -3,10 +3,13 @@
 A Python library for fetching and caching a device's real **public IP address** using STUN (Session Traversal Utilities for NAT) servers. Supports **Redis, SQLite, File-based, and In-Memory caching** for fast lookups.
 
 📌 **Why Use This?**  
-- Identifies real **public IP address** even behind NAT.  
-- Provides **multiple cache backends** (Redis, SQLite, File, Memory).  
-- **Works in Django, Flask, or standalone Python scripts**.
-- Automatic caching capability with minimal configuration.
+
+- Identifies real **public IP address** even behind NAT.
+- Optional caching feature
+- Provides **multiple cache backends** (Redis, SQLite, File, Memory).
+- Provide middleware support for Django and Flask
+- Implement caching mechanisms for performance optimization
+- Additional network parameters in fetched stun info - region, country, cordinates, timezone, ISP info etc
 
 ---
 
@@ -136,11 +139,18 @@ STUN_CACHE_TTL = 300  # Cache expiry in seconds
 Once the middleware is enabled, every request object will have the following attributes: 
 
 ```python
+from django.http import JsonResponse
+
 def sample_view(request):
     return JsonResponse({
-        "original_ip": request.ip,
-        "original_port": request.port,
-        "nat_type": request.nat_type
+        "ip": request.ip,
+        "port": request.port,
+        "nat_type": request.nat_type,
+        "city": request.city,
+        "region": request.region,
+        "country": request.country,
+        "continent": request.continent,
+        "timezone": request.timezone
     })
 ```
 
@@ -175,10 +185,15 @@ STUNMiddleware(
 @app.route("/get_ip")
 def get_ip():
     return jsonify({
+        "user_id": g.get("user_id"),
         "ip": g.get("ip"),
         "port": g.get("port"),
         "nat_type": g.get("nat_type"),
-        "user_id": g.get("user_id")
+        "city": g.get("city"),
+        "region": g.get("region"),
+        "country": g.get("country"),
+        "continent": g.get("continent"),
+        "timezone": g.get("timezone")
     })
 
 if __name__ == "__main__":
@@ -209,10 +224,14 @@ Example response:
 
 ```json
 {
-    "ip": "192.168.1.10",
-    "port": "54321",
-    "nat_type": "Symmetric NAT",
-    "user_id": "device123"
+'ip': '102.90.100.117', 
+'port': 10134, 
+'nat_type': 'Full Cone', 
+'city': 'Port Harcourt', 
+'region': 'Rivers State', 
+'country': 'NG',
+'continent': 'Africa',
+'timezone': 'Africa/Lagos'
 }
 ```
 
@@ -317,18 +336,17 @@ git checkout -b feature-name
 
 ## **🙌 Acknowledgments**
 
-🎉 **This library is dedicated to my mom - Monica A. Bosah, whose support made this possible. And to Engr. Hussein Nasser to gave me the idea that birthed this library through his backend engineering course on Udemy** ❤️ 
+🎉 **This library is specially dedicated to my mom - Monica A. Bosah, whose support made this possible; and to Engr. Hussein Nasser who not only sparked the idea that birthed this library through his backend engineering course on Udemy, but impacted in me alot through his wealth of knowledge, thinking and approach to solving problems** ❤️ 
 
 ---
 
 ## **🚀 Next Steps**
 
-- [ ] Optional caching for simple tasks
-- [ ] Support for synchronous and asynchronous for simplicity
-- [ ] Add other network parameters in fetched stun info
-- [ ] Stand-alone and environment simulated tests for middlewares
-- [ ] Support for other python backend frameworks
-- [ ] Signalling feature
+- [ ] Implement a simple WebSocket signaling server.
+- [ ] Extend conexia to generate ICE candidates & SDP.
+- [ ] Test peer-to-peer chat by exchanging SDP via WebSocket.
+- [ ] Package a CLI tool to allow remote users to connect and chat.
+- [ ] Remote file sharing.
 
 ---
 

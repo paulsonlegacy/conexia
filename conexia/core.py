@@ -9,15 +9,16 @@ from conexia.utils import *
 # Cache backend options - memory, file, sqlite, redis
 # ================================
 class AsyncSTUNClient:
-    def __init__(self, stun_server=None, stun_port=None, cache_backend="file", ttl=900, **cache_kwargs):
+    def __init__(self, cache:bool = True, stun_server:str=None, stun_port:int=None, cache_backend:str="file", ttl:int=900, **cache_kwargs):
         """Initialize STUN client with caching support."""
+        self.cache_toggle = cache # For toggling caching option
         self.cache_backend = cache_backend
         # Selecting server randomly from default STUN servers
         server_count = random.randint(0, len(DEFAULT_STUN_SERVERS) - 1)
         self.stun_server = stun_server or DEFAULT_STUN_SERVERS[server_count]["server"]
         self.stun_port = int(stun_port or DEFAULT_STUN_SERVERS[server_count]["port"])
         # Initializing cache engine
-        self.cache = IPResolverCache(backend=cache_backend, ttl=ttl, **cache_kwargs)
+        self.cache = IPResolverCache(backend=cache_backend, ttl=abs(ttl), **cache_kwargs)
 
     def _get_cached_ips(self):
         """Retrieve all cached IPs based on backend type."""
@@ -51,14 +52,16 @@ class AsyncSTUNClient:
         timestamp = time.time()  
 
         try:
-            #print("Trying to fetch data from cache")
-            user_id = get_user_id(request, user_id)
-            cached_ip = self._get_cached_ips()
-            if cached_ip:
-                stun_info = self.cache.get_cached_info(user_id)
-                if stun_info:
-                    print(f"Found data in {self.cache_backend} cache")
-                    return stun_info
+            # If cache option is toggled
+            if self.cache_toggle:
+                #print("Trying to fetch data from cache")
+                user_id = get_user_id(request, user_id)
+                cached_ip = self._get_cached_ips()
+                if cached_ip:
+                    stun_info = self.cache.get_cached_info(user_id)
+                    if stun_info:
+                        #print(f"Found data in {self.cache_backend} cache")
+                        return stun_info
             
             #print("Cache empty.. Fetching new STUN info")
             nat_type, ip, port = await self.get_stun_info(self.stun_server, self.stun_port)
@@ -74,7 +77,7 @@ class AsyncSTUNClient:
                 },
                 "timestamp": timestamp
             }
-            # Caching data
+            # Cache data
             self.cache.cache_stun_info(user_id, stun_data)
             # Return STUN result
             return stun_data
