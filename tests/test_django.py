@@ -1,8 +1,10 @@
 import unittest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch, MagicMock
 from django.test import RequestFactory
+from django.http import HttpResponse
 from django.conf import settings
-from conexia.middleware.django import STUNMiddleware
+from conexia.middleware.django import STUNMiddleware  # Adjust path if necessary
+from conexia.core import STUNClient
 
 if not settings.configured:
     settings.configure(
@@ -16,36 +18,37 @@ if not settings.configured:
         }
     )
 
-class TestDjangoMiddleware(unittest.IsolatedAsyncioTestCase):
-
-    async def asyncSetUp(self):
-        """Setup middleware with mock response."""
-        self.middleware = STUNMiddleware(lambda req: req)
+class TestSTUNDjangoMiddleware(unittest.TestCase):
+    def setUp(self):
+        """Set up a mock request and middleware instance"""
         self.factory = RequestFactory()
+        self.mock_response = MagicMock(return_value=HttpResponse("OK"))
+        self.middleware = STUNMiddleware(get_response=self.mock_response)
 
-    @patch("conexia.core.STUNClient.get_network_info", new_callable=AsyncMock)
-    async def test_middleware_attaches_stun_info(self, mock_stun):
-        """Test that STUN middleware attaches correct data to request."""
-        mock_stun.return_value = {
-            "data": {"ip": "192.0.2.1", "port": 54321, "nat_type": "Full Cone"}
-        }
+    @patch.object(STUNClient, 'get_network_info', return_value={"data": {
+        "ip": "192.168.1.1", "port": 54321, "city": "Lagos", "region": "LA", "country": "Nigeria",
+        "continent": "Africa", "timezone": "Africa/Lagos", "nat_type": "Full Cone"
+    }})
+    def test_middleware_attaches_stun_info(self, mock_stun):
+        """Test if middleware correctly attaches STUN info to request"""
+        request = self.factory.get("/")
+        response = self.middleware(request)
 
-        request = self.factory.get("/")  # ✅ Django Request Object
-        response = await self.middleware(request)
-
-        self.assertEqual(request.original_ip, "192.0.2.1")
-        self.assertEqual(request.original_port, 54321)
+        self.assertEqual(request.ip, "192.168.1.1")
+        self.assertEqual(request.city, "Lagos")
         self.assertEqual(request.nat_type, "Full Cone")
+        self.assertEqual(response.status_code, 200)
 
-    @patch("conexia.core.STUNClient.get_network_info", new_callable=AsyncMock, side_effect=Exception("STUN failure"))
-    async def test_middleware_handles_stun_failure(self, mock_stun):
-        """Test middleware behavior when STUN server is unreachable."""
-        request = self.factory.get("/")  # ✅ Django Request Object
-        response = await self.middleware(request)
+    @patch.object(STUNClient, 'get_network_info', side_effect=Exception("Mocked Error"))
+    def test_middleware_handles_exceptions_gracefully(self, mock_stun):
+        """Test if middleware assigns None to request attributes when an error occurs"""
+        request = self.factory.get("/")
+        response = self.middleware(request)
 
-        self.assertIsNone(request.original_ip)
-        self.assertIsNone(request.original_port)
+        self.assertIsNone(request.ip)
+        self.assertIsNone(request.city)
         self.assertIsNone(request.nat_type)
+        self.assertEqual(response.status_code, 200)
 
 if __name__ == "__main__":
     unittest.main()

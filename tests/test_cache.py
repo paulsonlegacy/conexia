@@ -1,139 +1,127 @@
-# Import necessary modules
-import os, time, json, sqlite3, redis, unittest
-
-
-# Import caching classes from the 'conexia.cache' module
+import os
+import time
+import json
+import unittest
+import sqlite3
+import redis
 from conexia.cache import InMemoryCache, FileCache, SQLiteCache, RedisCache
 
-# Define constants for file-based and SQLite cache paths
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Get the directory of the current file
-TEST_CACHE_FILE = os.path.join(BASE_DIR, "test_cache.json")  # File path for JSON-based file cache
-TEST_DB = os.path.join(BASE_DIR, "test_cache.sqlite")  # File path for SQLite-based cache
+# Sample test data
+USER_ID = "test_user"
+STUN_DATA = {
+    "data": {
+        "ip": "192.168.1.100",
+        "port": 5000,
+        "city": "New York",
+        "region": "NY",
+        "country": "USA",
+        "continent": "NA",
+        "timezone": "EST",
+        "cord": "40.7128,-74.0060",
+        "isp_info": "ISP Inc.",
+        "nat_type": "Symmetric NAT",
+    },
+    "timestamp": time.time(),
+}
 
-
-# Unit test class for InMemoryCache
+# ================================
+# 1️⃣ In-Memory Cache Tests
+# ================================
 class TestInMemoryCache(unittest.TestCase):
     def setUp(self):
-        """Set up the in-memory cache with a max size of 10 and a TTL (Time-To-Live) of 2 seconds."""
-        self.cache = InMemoryCache(max_size=10, ttl=2)
+        self.cache = InMemoryCache(ttl=2)  # Short TTL for testing expiry
 
-    def test_cache_stun_info(self):
-        """Test storing and retrieving STUN info from the in-memory cache."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        cached_data = self.cache.get_cached_info("user123")
-        self.assertIsNotNone(cached_data)  # Ensure data is stored
-        self.assertEqual(cached_data["data"]["ip"], "192.168.1.1")  # Verify stored IP
+    def test_cache_retrieval(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        self.assertEqual(self.cache.get_cached_info(USER_ID), STUN_DATA)
 
-    def test_cache_expiry(self):
-        """Test that cached data expires after the TTL period (2 seconds)."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        time.sleep(3)  # Wait for TTL to expire
-        cached_data = self.cache.get_cached_info("user123")
-        self.assertIsNone(cached_data)  # Ensure expired data is removed
+    def test_cache_expiration(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        time.sleep(2.1)
+        self.assertIsNone(self.cache.get_cached_info(USER_ID))
 
-    def test_clear_cache(self):
-        """Test that clearing the cache removes the stored entry."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        self.cache.clear_cache("user123")  # Clear cache for this key
-        self.assertIsNone(self.cache.get_cached_info("user123"))  # Ensure data is removed
+    def test_cache_clear(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        self.cache.clear_cache(USER_ID)
+        self.assertIsNone(self.cache.get_cached_info(USER_ID))
 
 
-# Unit test class for FileCache
+# ================================
+# 2️⃣ File-Based Cache Tests
+# ================================
 class TestFileCache(unittest.TestCase):
     def setUp(self):
-        """Set up the file-based cache with a JSON file and a TTL of 2 seconds."""
-        self.cache = FileCache(file_path=TEST_CACHE_FILE, ttl=2)
+        self.temp_file = "test_cache.json"
+        self.cache = FileCache(file_path=self.temp_file, ttl=2)
 
     def tearDown(self):
-        """Clean up the test file after each test."""
-        if os.path.exists(TEST_CACHE_FILE):
-            os.remove(TEST_CACHE_FILE)
+        if os.path.exists(self.temp_file):
+            os.remove(self.temp_file)
 
-    def test_cache_stun_info(self):
-        """Test storing and retrieving STUN info from the file-based cache."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        cached_data = self.cache.get_cached_info("user123")
-        self.assertIsNotNone(cached_data)
-        self.assertEqual(cached_data["data"]["ip"], "192.168.1.1")
+    def test_cache_retrieval(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        self.assertEqual(self.cache.get_cached_info(USER_ID), STUN_DATA)
 
-    def test_cache_expiry(self):
-        """Test that cached data expires after the TTL period (2 seconds)."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        time.sleep(3)
-        self.assertIsNone(self.cache.get_cached_info("user123"))
+    def test_cache_expiration(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        time.sleep(2.1)
+        self.assertIsNone(self.cache.get_cached_info(USER_ID))
 
-    def test_clear_cache(self):
-        """Test that clearing the cache removes the stored entry."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        self.cache.clear_cache("user123")
-        self.assertIsNone(self.cache.get_cached_info("user123"))
+    def test_cache_clear(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        self.cache.clear_cache(USER_ID)
+        self.assertIsNone(self.cache.get_cached_info(USER_ID))
 
 
-# Unit test class for SQLiteCache
+# ================================
+# 3️⃣ SQLite Cache Tests
+# ================================
 class TestSQLiteCache(unittest.TestCase):
     def setUp(self):
-        """Set up the SQLite-based cache with a database file and a TTL of 2 seconds."""
-        self.cache = SQLiteCache(db_path=TEST_DB, ttl=2)
+        self.temp_db = "test_cache.sqlite"
+        self.cache = SQLiteCache(db_path=self.temp_db, ttl=2)
 
     def tearDown(self):
-        """Clean up the test database file after each test."""
-        if os.path.exists(TEST_DB):
-            os.remove(TEST_DB)
+        if os.path.exists(self.temp_db):
+            os.remove(self.temp_db)
 
-    def test_cache_stun_info(self):
-        """Test storing and retrieving STUN info from the SQLite-based cache."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        cached_data = self.cache.get_cached_info("user123")
-        self.assertIsNotNone(cached_data)
-        self.assertEqual(cached_data["data"]["ip"], "192.168.1.1")
+    def test_cache_retrieval(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        self.assertEqual(self.cache.get_cached_info(USER_ID), STUN_DATA)
 
-    def test_cache_expiry(self):
-        """Test that cached data expires after the TTL period (2 seconds)."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        time.sleep(3)
-        self.assertIsNone(self.cache.get_cached_info("user123"))
+    def test_cache_expiration(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        time.sleep(2.1)
+        self.assertIsNone(self.cache.get_cached_info(USER_ID))
 
-    def test_clear_cache(self):
-        """Test that clearing the cache removes the stored entry."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        self.cache.clear_cache("user123")
-        self.assertIsNone(self.cache.get_cached_info("user123"))
+    def test_cache_clear(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        self.cache.clear_cache(USER_ID)
+        self.assertIsNone(self.cache.get_cached_info(USER_ID))
 
 
-# Unit test class for RedisCache
+# ================================
+# 4️⃣ Redis Cache Tests
+# ================================
 class TestRedisCache(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        """Set up the Redis-based cache using a local Redis server before running tests."""
-        cls.redis_client = redis.Redis(host="localhost", port=6379, db=0)  # Connect to Redis
-        cls.redis_client.flushdb()  # Clear the Redis database to avoid conflicts
-        cls.cache = RedisCache(redis_url="redis://localhost:6379", ttl=2)
+    def setUp(self):
+        self.cache = RedisCache(ttl=2)
 
-    @classmethod
-    def tearDownClass(cls):
-        """Clean up Redis database after all tests."""
-        cls.redis_client.flushdb()
+    def test_cache_retrieval(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        self.assertEqual(self.cache.get_cached_info(USER_ID), STUN_DATA)
 
-    def test_cache_stun_info(self):
-        """Test storing and retrieving STUN info from the Redis-based cache."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        cached_data = self.cache.get_cached_info("user123")
-        self.assertIsNotNone(cached_data)
-        self.assertEqual(cached_data["data"]["ip"], "192.168.1.1")
+    def test_cache_expiration(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        time.sleep(2.1)
+        self.assertIsNone(self.cache.get_cached_info(USER_ID))
 
-    def test_cache_expiry(self):
-        """Test that cached data expires after the TTL period (2 seconds)."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        time.sleep(3)
-        self.assertIsNone(self.cache.get_cached_info("user123"))
-
-    def test_clear_cache(self):
-        """Test that clearing the cache removes the stored entry."""
-        self.cache.cache_stun_info("user123", "192.168.1.1", 5000, "Full Cone", time.time())
-        self.cache.clear_cache("user123")
-        self.assertIsNone(self.cache.get_cached_info("user123"))
+    def test_cache_clear(self):
+        self.cache.cache_stun_info(USER_ID, STUN_DATA)
+        self.cache.clear_cache(USER_ID)
+        self.assertIsNone(self.cache.get_cached_info(USER_ID))
 
 
-# Run all unit tests when this script is executed directly
+# Run the tests
 if __name__ == "__main__":
     unittest.main()
