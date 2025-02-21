@@ -149,7 +149,7 @@ class SQLiteCache:
             row = cursor.fetchone()
             if row:
                 current_time = time.time()
-                if current_time - row[10] < self.ttl:
+                if current_time - row[11] < self.ttl:
                     return {
                         "user_id": row[0],
                         "data": {
@@ -212,7 +212,7 @@ class RedisCache:
 # Cache Manager (Chooses Backend)
 # ================================
 class IPResolverCache:
-    def __init__(self, backend="memory", ttl=300, **kwargs):  
+    def __init__(self, backend="memory", ttl=900, **kwargs):  
         """Initialize the appropriate cache backend with TTL support."""
         if backend == "memory":
             self.cache = InMemoryCache(ttl=ttl, **kwargs)  # Pass TTL

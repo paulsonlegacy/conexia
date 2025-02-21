@@ -4,12 +4,19 @@ from conexia.exceptions import STUNResolutionError
 from conexia.utils import *
 
 
+# ================================
+# Default cache expiry is 900s or 15min
+# Cache backend options - memory, file, sqlite, redis
+# ================================
 class AsyncSTUNClient:
-    def __init__(self, stun_server=None, stun_port=None, cache_backend="file", ttl=900, **cache_kwargs): # Default cache expiry is 900s or 15min
+    def __init__(self, stun_server=None, stun_port=None, cache_backend="file", ttl=900, **cache_kwargs):
         """Initialize STUN client with caching support."""
+        self.cache_backend = cache_backend
+        # Selecting server randomly from default STUN servers
         server_count = random.randint(0, len(DEFAULT_STUN_SERVERS) - 1)
         self.stun_server = stun_server or DEFAULT_STUN_SERVERS[server_count]["server"]
         self.stun_port = int(stun_port or DEFAULT_STUN_SERVERS[server_count]["port"])
+        # Initializing cache engine
         self.cache = IPResolverCache(backend=cache_backend, ttl=ttl, **cache_kwargs)
 
     def _get_cached_ips(self):
@@ -44,16 +51,16 @@ class AsyncSTUNClient:
         timestamp = time.time()  
 
         try:
-            print("Trying to fetch data from cache")
+            #print("Trying to fetch data from cache")
             user_id = get_user_id(request, user_id)
             cached_ip = self._get_cached_ips()
             if cached_ip:
                 stun_info = self.cache.get_cached_info(user_id)
                 if stun_info:
-                    print("Found data in cache")
+                    print(f"Found data in {self.cache_backend} cache")
                     return stun_info
             
-            print("Cache empty.. Fetching new STUN info")
+            #print("Cache empty.. Fetching new STUN info")
             nat_type, ip, port = await self.get_stun_info(self.stun_server, self.stun_port)
             # Fetching other network parameters via API
             geo_info = await check_ip_info(ip)

@@ -13,6 +13,11 @@ DEFAULT_STUN_SERVERS = [
     # {"server":"stun.sipnet.net", "port":3478},
     # {"server":"stun.twilio.com:3478", "port":3478}
 ]
+API_RESULT_TEMPLATE = {
+    "ip": None, "city": None, "region": None,
+    "country": None, "loc": None, "org": None,
+    "timezone": None
+}
 
 # Functions
 def get_machine_uuid() -> str:
@@ -84,24 +89,17 @@ def get_continent_from_timezone(timezone: str) -> str | None:
 
 async def check_ip_info(ip: str) -> dict:
     """Fetch other network info using the ip address"""
-    # API is limited to 50k requests/month
+    # IPinfo.io API free plan is limited to 50k requests/month
     api = f"https://ipinfo.io/{ip}?token=5b906ff5a22c80"
 
     try:
+        # Fetching from API
         req = requests.get(api)
 
         if req.status_code == 200:
             data = req.json()
         else:
-            data = {
-                "ip": ip, "city": None, "region": None,
-                "country": None, "loc": None, "org": None,
-                "timezone": None
-            }
+            data = API_RESULT_TEMPLATE
     except:
-        data = {
-            "ip": ip, "city": None, "region": None,
-            "country": None, "loc": None, "org": None,
-            "timezone": None
-        }
+        data = API_RESULT_TEMPLATE
     return data

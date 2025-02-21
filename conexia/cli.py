@@ -2,13 +2,9 @@ import asyncio
 from conexia.core import AsyncSTUNClient
 
 
-async def main():
+async def main() -> str:
     client = AsyncSTUNClient(cache_backend="file")
     network_info = await client.get_network_info()
-    #user_id = await client.get_user_id()
-    #public_ip = await client.get_public_ip()
-    #public_port = await client.get_public_port()
-    #nat_type = await client.get_nat_type()
 
     # Print CLI output
     print("STUN Result:", network_info)
